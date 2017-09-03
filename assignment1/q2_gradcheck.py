@@ -30,7 +30,14 @@ def gradcheck_naive(f, x):
         # to test cost functions with built in randomness later.
 
         ### YOUR CODE HERE:
-        raise NotImplementedError
+        random.setstate(rndstate)
+        x[ix] += h
+        f1, _ = f(x)
+        x[ix] -= 2*h
+        random.setstate(rndstate)
+        f2, _ = f(x)
+        x[ix] += h
+        numgrad = (f1 - f2) / (2 * h)
         ### END YOUR CODE
 
         # Compare gradients
