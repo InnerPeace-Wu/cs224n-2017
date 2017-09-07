@@ -100,13 +100,16 @@ def negSamplingCostAndGradient(predicted, target, outputVectors, dataset,
     indices.extend(getNegativeSamples(target, dataset, K))
 
     ### YOUR CODE HERE
+
     u_o = outputVectors[target]
-    sig_neg = sigmoid(- outputVectors[indices[1:], :].dot(predicted))
+    sig_neg = sigmoid(- outputVectors[indices[1:]].dot(predicted))[:,None]
     cost = -np.log(sigmoid(u_o.dot(predicted))) - np.sum(np.log(sig_neg))
-    gradPred = (sigmoid(u_o.dot(predicted)) - 1) * u_o + np.sum((1. - sig_neg)[:, None] * outputVectors[indices[1:], :], axis=0)
+    gradPred = (sigmoid(u_o.dot(predicted)) - 1) * u_o + np.sum((1. - sig_neg) * outputVectors[indices[1:]], axis=0)
     grad = np.zeros(outputVectors.shape)
     grad[target] = (sigmoid(u_o.dot(predicted)) - 1) * predicted
-    grad[indices[1:], :] = np.outer((1. - sig_neg), predicted)
+    # This won't work, because maybe same word could appear several times.
+    # grad[indices[1:]] += np.outer((1. - sig_neg), predicted)
+    np.add.at(grad, indices[1:], np.outer((1. - sig_neg), predicted))
     ### END YOUR CODE
 
     return cost, gradPred, grad

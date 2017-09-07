@@ -102,3 +102,6 @@ ENV/
 
 # datasets
 /assignment1/utils/datasets/
+
+# mac
+.DS_Store
