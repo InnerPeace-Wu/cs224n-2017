@@ -165,7 +165,7 @@ def cbow(currentWord, C, contextWords, tokens, inputVectors, outputVectors,
 
     Arguments/Return specifications: same as the skip-gram model
 
-    Extra credit: Implementing CBOW is optional, but the gradient
+    Extra credit: Implementing CBOW is optional, but the gradient  
     derivations are not. If you decide not to implement CBOW, remove
     the NotImplementedError.
     """
@@ -175,7 +175,14 @@ def cbow(currentWord, C, contextWords, tokens, inputVectors, outputVectors,
     gradOut = np.zeros(outputVectors.shape)
 
     ### YOUR CODE HERE
-    pass
+    target = tokens[currentWord]
+    inds = [tokens[w] for w in contextWords]
+    predicted = np.sum(inputVectors[inds], axis = 0)
+    cost_t, gradPred, grad = word2vecCostAndGradient(predicted, target, outputVectors, dataset)
+    cost += cost_t
+    gradOut += grad
+    # have to use np.add.at
+    np.add.at(gradIn, inds, gradPred)
     ### END YOUR CODE
 
     return cost, gradIn, gradOut
