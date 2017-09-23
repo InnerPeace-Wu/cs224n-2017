@@ -24,7 +24,8 @@ class PartialParse(object):
         self.stack = ["ROOT"]
         # self.buffer = self.sentence will not work, because by this way, the two variables refer to the
         # same address(i.e. the same content), which means either is changed, the other will follow.
-        self.buffer = self.sentence[:]
+        # self.buffer = self.sentence[:]
+        self.buffer = [word for word in sentence]
         self.dependencies = []
         ### END YOUR CODE
 
@@ -42,7 +43,10 @@ class PartialParse(object):
         elif transition == 'LA' and len(self.stack) > 1:
             self.dependencies.append((self.stack[-1], self.stack[-2]))
             # delete the second-to-last element in stack
-            self.stack.pop(-2)
+            if self.stack[-2] == 'ROOT':
+                self.stack.pop(-1)
+            else:
+                self.stack.pop(-2)
         elif transition == 'RA' and len(self.stack) > 1:
             self.dependencies.append((self.stack[-2], self.stack[-1]))
             # removes the last element in stack
@@ -82,18 +86,46 @@ def minibatch_parse(sentences, model, batch_size):
     """
 
     ### YOUR CODE HERE
-    num_example = len(sentences)
-    partial_parses = []
-    dependencies = [[] for i in xrange(num_example)]
-    for i in xrange(num_example):
-        partial_parses.append(PartialParse(sentences[i]))
-    for i in xrange(num_example // batch_size + 1):
-        transitions = model.predict(partial_parses[i*batch_size : (i+1)*batch_size])
+    #'''
+    partial_parses = [PartialParse(sentence) for sentence in sentences]
+    unfinished_parses = partial_parses[:]
 
-        for j in xrange(batch_size):
-            ind = i*batch_size + j
-            if ind < num_example:
-                dependencies[ind].append(partial_parses[ind].parse(transitions[j]))
+    while unfinished_parses:
+        minibatch_parses = unfinished_parses[:batch_size]
+        transitions = model.predict(minibatch_parses)
+
+        for parse, transition in zip(minibatch_parses, transitions):
+            parse.parse_step(transition)
+            if len(parse.stack) < 2 and len(parse.buffer) < 1:
+                unfinished_parses.remove(parse)
+
+    dependencies = [p.dependencies for p in partial_parses]
+    '''
+    import copy
+    num_example = len(sentences)
+    partial_parses  = [PartialParse(sentences[i]) for i in xrange(num_example)]
+    # shallow copy
+    unfinished_parse = copy.copy(partial_parses)
+    while len(unfinished_parse) > 0:
+        temp_parses = []
+        for i in xrange(len(unfinished_parse) // batch_size + 1):
+            if i*batch_size >= len(unfinished_parse):
+                continue
+            transitions = model.predict(unfinished_parse[i*batch_size : (i+1)*batch_size])
+            for j in xrange(batch_size):
+                ind = i*batch_size + j
+                if ind < len(unfinished_parse):
+                    unfinished_parse[ind].parse([transitions[j]])
+
+        for ind in xrange(len(unfinished_parse)):
+            if len(unfinished_parse[ind].stack) == 1 and len(unfinished_parse[ind].buffer) == 0:
+                continue
+            else:
+                temp_parses.append(unfinished_parse[ind])
+        unfinished_parse = temp_parses
+
+    dependencies = [pp.dependencies for pp in partial_parses]
+    #'''
     ### END YOUR CODE
 
     return dependencies
@@ -168,6 +200,7 @@ def test_minibatch_parse():
                  ["right", "arcs", "only", "again"],
                  ["left", "arcs", "only"],
                  ["left", "arcs", "only", "again"]]
+    #sentences = [["left", "arcs", "only"]]
     deps = minibatch_parse(sentences, DummyModel(), 2)
     test_dependencies("minibatch_parse", deps[0],
                       (('ROOT', 'right'), ('arcs', 'only'), ('right', 'arcs')))
