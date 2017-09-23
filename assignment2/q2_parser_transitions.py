@@ -21,6 +21,11 @@ class PartialParse(object):
         self.sentence = sentence
 
         ### YOUR CODE HERE
+        self.stack = ["ROOT"]
+        # self.buffer = self.sentence will not work, because by this way, the two variables refer to the
+        # same address(i.e. the same content), which means either is changed, the other will follow.
+        self.buffer = self.sentence[:]
+        self.dependencies = []
         ### END YOUR CODE
 
     def parse_step(self, transition):
@@ -31,6 +36,18 @@ class PartialParse(object):
                         and right-arc transitions.
         """
         ### YOUR CODE HERE
+        if transition == 'S' and len(self.buffer) > 0:
+            word = self.buffer.pop(0)
+            self.stack.append(word)
+        elif transition == 'LA' and len(self.stack) > 1:
+            self.dependencies.append((self.stack[-1], self.stack[-2]))
+            # delete the second-to-last element in stack
+            self.stack.pop(-2)
+        elif transition == 'RA' and len(self.stack) > 1:
+            self.dependencies.append((self.stack[-2], self.stack[-1]))
+            # removes the last element in stack
+            self.stack.pop()
+
         ### END YOUR CODE
 
     def parse(self, transitions):
@@ -65,6 +82,18 @@ def minibatch_parse(sentences, model, batch_size):
     """
 
     ### YOUR CODE HERE
+    num_example = len(sentences)
+    partial_parses = []
+    dependencies = [[] for i in xrange(num_example)]
+    for i in xrange(num_example):
+        partial_parses.append(PartialParse(sentences[i]))
+    for i in xrange(num_example // batch_size + 1):
+        transitions = model.predict(partial_parses[i*batch_size : (i+1)*batch_size])
+
+        for j in xrange(batch_size):
+            ind = i*batch_size + j
+            if ind < num_example:
+                dependencies[ind].append(partial_parses[ind].parse(transitions[j]))
     ### END YOUR CODE
 
     return dependencies
