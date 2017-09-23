@@ -9,7 +9,6 @@ from model import Model
 from utils.general_utils import get_minibatches
 
 
-
 class Config(object):
     """Holds model hyperparams and data information.
 
