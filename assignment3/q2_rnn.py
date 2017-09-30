@@ -320,11 +320,15 @@ class RNNModel(NERModel):
             loss: A 0-d tensor (scalar)
         """
         ### YOUR CODE HERE (~2-4 lines)
-        labels = tf.boolean_mask(self.labels_placeholder, self.mask_placeholder)
-        logits = tf.boolean_mask(preds, self.mask_placeholder)
-        loss = tf.nn.sparse_softmax_cross_entropy_with_logits(labels=labels,
-                                                              logits=logits)
-        loss = tf.reduce_mean(loss)
+        # labels = tf.boolean_mask(self.labels_placeholder, self.mask_placeholder)
+        # logits = tf.boolean_mask(preds, self.mask_placeholder)
+        # loss = tf.nn.sparse_softmax_cross_entropy_with_logits(labels=labels,
+        #                                                       logits=logits)
+        # loss = tf.reduce_mean(loss)
+        raw_loss = tf.nn.sparse_softmax_cross_entropy_with_logits(
+            labels=self.labels_placeholder,
+            logits=preds)
+        loss = tf.reduce_mean(tf.boolean_mask(raw_loss, self.mask_placeholder))
         ### END YOUR CODE
         return loss
 
